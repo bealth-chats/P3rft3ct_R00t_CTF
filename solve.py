@@ -4,8 +4,10 @@ def solve():
     pairs = [40, 48, 78, 59, 69, 67, 49, 50, 77, 40, 57, 97]
 
     # Key derived from analysis (XOR with "r00t" and pattern matching)
-    # Key length 6 repeating
-    key = [90, 0, 126, 79, 118, 28]
+    # Key: 90 0 126 79 126 28
+    # 'Z' '\x00' '~' 'O' '~' '\x1c'
+    # This key yields a fully printable flag and follows a pattern (~ O ~).
+    key = [90, 0, 126, 79, 126, 28]
 
     decrypted = []
     for i, p in enumerate(pairs):
