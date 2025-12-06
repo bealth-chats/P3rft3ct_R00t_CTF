@@ -2,37 +2,17 @@ from web3 import Web3
 from datetime import datetime, timezone, timedelta
 import sys
 
-# List of public RPCs to try
-rpcs = [
-    'https://rpc.sepolia.org',
-    'https://1rpc.io/sepolia',
-    'https://sepolia.drpc.org'
-]
+# Connect to RPC
+rpc = 'https://1rpc.io/sepolia'
+w3 = Web3(Web3.HTTPProvider(rpc))
 
-w3 = None
-for rpc in rpcs:
-    print(f"Trying to connect to {rpc}...")
-    temp_w3 = Web3(Web3.HTTPProvider(rpc))
-    if temp_w3.is_connected():
-        w3 = temp_w3
-        print(f"Connected to {rpc}")
-        break
-    else:
-        print(f"Failed to connect to {rpc}")
-
-if not w3:
-    print("Could not connect to any Sepolia RPC")
+if not w3.is_connected():
+    print("Failed to connect")
     sys.exit(1)
 
 tx_hash = '0xa9179ed7e17db0868e2676af77bb25a46b5adc934e0bc361a7057c1df5eaa118'
-
 print(f"Fetching transaction {tx_hash}...")
-try:
-    # Get transaction
-    tx = w3.eth.get_transaction(tx_hash)
-except Exception as e:
-    print(f"Error fetching transaction: {e}")
-    sys.exit(1)
+tx = w3.eth.get_transaction(tx_hash)
 
 # Get deployer address (from)
 deployer_address = tx['from']
@@ -42,11 +22,19 @@ print(f"Deployer Address: {deployer_address}")
 block_number = tx['blockNumber']
 print(f"Block Number: {block_number}")
 
-# Get block
-print(f"Fetching block {block_number}...")
-block = w3.eth.get_block(block_number)
-timestamp = block['timestamp']
-print(f"Timestamp (UTC): {timestamp}")
+# Analyze input data for hidden timestamp
+input_data = tx['input']
+# Constructor arguments are usually at the end.
+# Based on analysis, the last 64 bytes (2 words) contain data.
+# The timestamp is likely the first of these two words (offset -64 to -32).
+# Word 1: 0x6916c6b9 -> 1763100345
+
+timestamp_hex = input_data[-64:-32].hex()
+timestamp = int(timestamp_hex, 16)
+print(f"Hidden Timestamp (Decimal): {timestamp}")
+
+# Verify if it looks like a valid timestamp (approx 2025)
+# 1763100345 is indeed around Nov 2025.
 
 # Convert timestamp to EAT (UTC+3)
 utc_time = datetime.fromtimestamp(timestamp, tz=timezone.utc)
